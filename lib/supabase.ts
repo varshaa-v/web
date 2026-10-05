@@ -1,7 +1,17 @@
 import { createBrowserClient, createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { User } from "@supabase/supabase-js";
 
 export type UserRole = "student" | "staff" | "admin";
+export function isUserRole(role: unknown): role is UserRole {
+  return role === "student" || role === "staff" || role === "admin";
+}
+
+export type UserContext = {
+  user: User;
+  role: UserRole;
+  fullName: string;
+};
 
 export const hasSupabaseConfig = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -35,7 +45,11 @@ export async function createSupabaseServerClient() {
         },
         setAll(cookiesToSet) {
           for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
+            try {
+              cookieStore.set(name, value, options);
+            } catch {
+              // Server components cannot write cookies; proxy.ts refreshes sessions on requests.
+            }
           }
         },
       },
@@ -43,43 +57,44 @@ export async function createSupabaseServerClient() {
   );
 }
 
-export async function getCurrentUserRole(): Promise<UserRole | null> {
-  if (!hasSupabaseConfig) {
+export async function getUserContext(): Promise<UserContext | null> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
     return null;
   }
 
-  try {
-    const supabase = await createSupabaseServerClient();
-    if (!supabase) {
-      return null;
-    }
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return null;
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    return profile?.role ?? "student";
-  } catch {
+  if (authError) {
+    throw authError;
+  }
+  if (!user) {
     return null;
   }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role, full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    throw profileError;
+  }
+  if (!profile || !isUserRole(profile.role)) {
+    return null;
+  }
+
+  return {
+    user,
+    role: profile.role,
+    fullName: profile.full_name,
+  };
 }
 
-export async function requireRole(allowedRoles: UserRole[]) {
-  const role = await getCurrentUserRole();
-
-  if (!role || !allowedRoles.includes(role)) {
-    return false;
-  }
-
-  return true;
+export function dashboardPath(role: UserRole) {
+  return `/${role}`;
 }

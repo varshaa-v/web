@@ -1,59 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import {
-  ArrowRight,
-  BriefcaseBusiness,
-  LockKeyhole,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, ShieldCheck, UserRound } from "lucide-react";
 
-type Role = "student" | "staff" | "admin";
-
-const demoAccounts: Record<Role, { email: string; password: string; name: string }> = {
-  student: {
-    email: "student@queueless.demo",
-    password: "Student123!",
-    name: "Aanya Verma",
-  },
-  staff: {
-    email: "staff@queueless.demo",
-    password: "Staff123!",
-    name: "Rohan Mehta",
-  },
-  admin: {
-    email: "admin@queueless.demo",
-    password: "Admin123!",
-    name: "Nisha Kapoor",
-  },
+type AuthResult = {
+  error?: string;
+  redirectTo?: string | null;
+  needsEmailConfirmation?: boolean;
 };
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<Role>("student");
-  const [email, setEmail] = useState(demoAccounts.student.email);
-  const [password, setPassword] = useState(demoAccounts.student.password);
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState(
+    searchParams.get("error") === "profile"
+      ? "Your account exists, but an administrator needs to finish setting up its profile."
+      : searchParams.get("error") === "configuration"
+        ? "Supabase is not configured yet. Add its URL and anon key to the app environment."
+        : searchParams.get("error")
+          ? "The email confirmation link is invalid or expired. Please try signing in or register again."
+          : "",
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRoleChange = (role: Role) => {
-    setSelectedRole(role);
-    setEmail(demoAccounts[role].email);
-    setPassword(demoAccounts[role].password);
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setMessage("");
+    setIsSubmitting(true);
 
-    if (email.trim() && password.trim()) {
-      const dashboardMap: Record<Role, string> = {
-        student: "/student",
-        staff: "/staff",
-        admin: "/admin",
-      };
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode, fullName, email, password }),
+      });
+      const result = await response.json() as AuthResult;
 
-      router.push(dashboardMap[selectedRole]);
+      if (!response.ok) {
+        setMessage(result.error ?? "Authentication failed. Please try again.");
+      } else if (result.needsEmailConfirmation) {
+        setMessage("Account created. Check your email to confirm your address, then sign in.");
+        setMode("login");
+        setPassword("");
+      } else if (result.redirectTo) {
+        window.location.assign(result.redirectTo);
+      }
+
+    } catch {
+      setMessage("Could not reach the app server. Check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -64,37 +66,52 @@ export default function LoginPage() {
           <div className="brand-mark">Q</div>
           <div>
             <span className="eyebrow">QueueLess</span>
-            <h1>Welcome back</h1>
+            <h1>{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           </div>
         </div>
 
-        <div className="role-switcher" aria-label="Choose a user role">
-          {(["student", "staff", "admin"] as Role[]).map((role) => (
-            <button
-              key={role}
-              type="button"
-              className={`role-pill ${selectedRole === role ? "is-active" : ""}`}
-              onClick={() => handleRoleChange(role)}
-            >
-              {role === "student" && <UserRound size={14} />}
-              {role === "staff" && <BriefcaseBusiness size={14} />}
-              {role === "admin" && <ShieldCheck size={14} />}
-              {role}
-            </button>
-          ))}
+        <div className="role-switcher" aria-label="Account access">
+          <span className={`role-pill ${mode === "login" ? "is-active" : ""}`}>
+            <ShieldCheck size={14} /> Sign in
+          </span>
+          <button
+            type="button"
+            className={`role-pill ${mode === "signup" ? "is-active" : ""}`}
+            onClick={() => {
+              setMode(mode === "signup" ? "login" : "signup");
+              setMessage("");
+            }}
+          >
+            <UserRound size={14} /> Student registration
+          </button>
         </div>
 
         <div className="auth-card">
           <div className="auth-card__header">
-            <p className="eyebrow">{selectedRole.toUpperCase()} ACCESS</p>
-            <h2>{demoAccounts[selectedRole].name}</h2>
+            <p className="eyebrow">{mode === "login" ? "SECURE ACCESS" : "STUDENT ACCESS"}</p>
+            <h2>{mode === "login" ? "Sign in to your account" : "Join the queue online"}</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="auth-form">
+            {mode === "signup" && (
+              <label>
+                <span>Full name</span>
+                <input
+                  required
+                  autoComplete="name"
+                  maxLength={120}
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  placeholder="Your full name"
+                />
+              </label>
+            )}
             <label>
               <span>Email</span>
               <input
+                required
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="name@college.edu"
@@ -104,35 +121,49 @@ export default function LoginPage() {
             <label>
               <span>Password</span>
               <input
+                required
                 type="password"
+                minLength={8}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Enter your password"
+                placeholder="At least 8 characters"
               />
             </label>
 
-            <button type="submit" className="btn btn--primary btn--block">
-              Sign in <ArrowRight size={16} />
+            {message && <p role="status" className="small-note">{message}</p>}
+
+            <button type="submit" className="btn btn--primary btn--block" disabled={isSubmitting}>
+              {isSubmitting ? "Please wait…" : mode === "login" ? "Sign in" : "Create student account"}
+              <ArrowRight size={16} />
             </button>
           </form>
 
           <div className="demo-box">
             <div className="demo-label">
-              <LockKeyhole size={14} />
-              Demo credentials
+              <BriefcaseBusiness size={14} />
+              Staff and admin accounts
             </div>
             <div className="demo-meta">
-              <span>{demoAccounts[selectedRole].email}</span>
-              <span>{demoAccounts[selectedRole].password}</span>
+              <span>Created by your Supabase project administrator</span>
+              <span>Access is granted by the profile role</span>
             </div>
           </div>
 
           <div className="auth-links">
             <Link href="/">Back to home</Link>
-            <Link href="/student">Student view</Link>
+            <Link href="/student">Student dashboard</Link>
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<main className="auth-shell"><p>Loading sign in…</p></main>}>
+      <LoginForm />
+    </Suspense>
   );
 }

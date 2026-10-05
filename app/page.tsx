@@ -83,16 +83,16 @@ export default function HomePage() {
 
             <div className="hero-metrics">
               <div>
-                <strong>42%</strong>
-                <span>Less crowding</span>
-              </div>
-              <div>
-                <strong>11 min</strong>
-                <span>Average wait saved</span>
-              </div>
-              <div>
                 <strong>3 roles</strong>
                 <span>Student, staff, admin</span>
+              </div>
+              <div>
+                <strong>Live</strong>
+                <span>Queue position updates</span>
+              </div>
+              <div>
+                <strong>One</strong>
+                <span>Active token per student</span>
               </div>
             </div>
           </div>
@@ -100,10 +100,10 @@ export default function HomePage() {
           <div className="hero-visual panel-card">
             <div className="visual-header">
               <div>
-                <span className="eyebrow">Live service board</span>
+                <span className="eyebrow">Example service board</span>
                 <h2>Accounts desk</h2>
               </div>
-              <span className="status-badge success">Open</span>
+              <span className="status-badge neutral">Illustration</span>
             </div>
 
             <div className="queue-preview">
@@ -177,9 +177,9 @@ export default function HomePage() {
               <span className="eyebrow">Queue estimation engine</span>
               <h2>Smart waiting estimates that help students plan before they travel.</h2>
               <p>
-                QueueLess calculates an estimated wait time using live demand, average service duration,
-                active counters, and a short historical model of queue behaviour. This helps students decide
-                whether to wait digitally, arrive later, or use another service window.
+                QueueLess estimates waiting time from a student&apos;s live queue position and the service
+                duration configured by an administrator. Estimates recalculate as tokens move through the
+                queue and should be treated as guidance, not a guarantee.
               </p>
             </div>
 
@@ -187,17 +187,17 @@ export default function HomePage() {
               <div>
                 <Sparkles size={18} />
                 <strong>Queue confidence</strong>
-                <span>92% model fit</span>
+                <span>Position × service time</span>
               </div>
               <div>
                 <Users size={18} />
                 <strong>Active counters</strong>
-                <span>2 of 4 open</span>
+                <span>Managed by administrators</span>
               </div>
               <div>
                 <Clock3 size={18} />
                 <strong>Average service</strong>
-                <span>6–10 minutes</span>
+                <span>Configured per service</span>
               </div>
               <div>
                 <ShieldCheck size={18} />
