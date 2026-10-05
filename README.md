@@ -30,7 +30,7 @@ QueueLess is a role-based queue management app for college administrative office
    NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_PUBLIC_OR_ANON_KEY
    ```
    This app does not need a service-role key. Never expose one to the browser or add it as a `NEXT_PUBLIC_` variable.
-3. In **Authentication → Providers → Email** (or the email settings under **Authentication → Sign In / Providers**), enable Email and turn off **Confirm email**. This lets new students register and sign in immediately without verifying their email. If you already registered an unconfirmed account, confirm it in **Authentication → Users** or remove it and register again after disabling confirmation.
+3. In **Authentication → Providers → Email** (or the email settings under **Authentication → Sign In / Providers**), enable Email and turn off **Confirm email**. This lets new students register and sign in immediately without verifying their email. If Supabase reports an email rate limit, it may have tried to send confirmation emails while this setting was on: turn it off, wait for the limit to reset, then try again. If an account was already created but remains unconfirmed, confirm it in **Authentication → Users** or remove it and register again.
 4. In the Supabase **SQL Editor**, run `supabase/schema.sql`. It creates the tables, RLS policies, profile creation trigger, queue RPCs, and starter services/counters. It also creates student profiles for existing email-based Auth users that do not have a profile yet.
 5. Register a student through the app. New Auth users automatically get a `student` profile.
 6. To provision staff and the first admin:

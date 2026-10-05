@@ -40,6 +40,11 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      if (error.message.toLowerCase().includes("email rate limit exceeded")) {
+        return Response.json({
+          error: "Supabase is still trying to send an authentication email. Turn off Confirm email in Supabase Authentication settings, wait for the email rate limit to reset, then try again.",
+        }, { status: 429 });
+      }
       return Response.json({ error: error.message }, { status: 400 });
     }
 
@@ -58,6 +63,11 @@ export async function POST(request: Request) {
 
   const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
   if (signInError) {
+    if (signInError.message.toLowerCase().includes("email not confirmed")) {
+      return Response.json({
+        error: "This account is still unconfirmed. Turn off Confirm email in Supabase Authentication settings, then confirm this account in Supabase Authentication → Users or delete it and register again.",
+      }, { status: 401 });
+    }
     return Response.json({ error: signInError.message }, { status: 401 });
   }
 
