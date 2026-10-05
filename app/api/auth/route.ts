@@ -33,24 +33,23 @@ export async function POST(request: Request) {
       return Response.json({ error: "Enter your name, a valid email, and a password with at least 8 characters." }, { status: 400 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: fullName },
-        ...(appUrl ? { emailRedirectTo: `${appUrl.replace(/\/$/, "")}/auth/callback` } : {}),
-      },
+      options: { data: { full_name: fullName } },
     });
 
     if (error) {
       return Response.json({ error: error.message }, { status: 400 });
     }
 
-    return Response.json({
-      needsEmailConfirmation: !data.session,
-      redirectTo: data.session ? "/student" : null,
-    });
+    if (!data.session) {
+      return Response.json({
+        error: "Account created, but Supabase did not start a session. Turn off email confirmation in Supabase Authentication settings, then sign in.",
+      }, { status: 409 });
+    }
+
+    return Response.json({ redirectTo: "/student" });
   }
 
   if (body.mode !== "login" || !email || !password) {

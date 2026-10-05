@@ -28,15 +28,13 @@ QueueLess is a role-based queue management app for college administrative office
    ```dotenv
    NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_PUBLIC_OR_ANON_KEY
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
    ```
    This app does not need a service-role key. Never expose one to the browser or add it as a `NEXT_PUBLIC_` variable.
-3. In **Authentication → URL Configuration**, set the local site URL to `http://localhost:3000` and add `http://localhost:3000/auth/callback` to the redirect URLs. Set the site URL to your production domain when deploying.
-4. In **Authentication → Providers**, enable Email. Email confirmation can remain enabled; new students will be asked to confirm their address before signing in.
-5. In the Supabase **SQL Editor**, run `supabase/schema.sql`. It creates the tables, RLS policies, profile creation trigger, queue RPCs, and starter services/counters. It also creates student profiles for existing email-based Auth users that do not have a profile yet.
-6. Register a student through the app. New Auth users automatically get a `student` profile.
-7. To provision staff and the first admin:
-   - Create each account in **Authentication → Users** (or register it through the app) and confirm the email.
+3. In **Authentication → Providers → Email** (or the email settings under **Authentication → Sign In / Providers**), enable Email and turn off **Confirm email**. This lets new students register and sign in immediately without verifying their email. If you already registered an unconfirmed account, confirm it in **Authentication → Users** or remove it and register again after disabling confirmation.
+4. In the Supabase **SQL Editor**, run `supabase/schema.sql`. It creates the tables, RLS policies, profile creation trigger, queue RPCs, and starter services/counters. It also creates student profiles for existing email-based Auth users that do not have a profile yet.
+5. Register a student through the app. New Auth users automatically get a `student` profile.
+6. To provision staff and the first admin:
+   - Create each account in **Authentication → Users** (or register it through the app).
    - In the SQL Editor, promote those users by email. Replace the example addresses:
      ```sql
      update public.profiles set role = 'staff'
@@ -55,8 +53,7 @@ The dashboard data and queue actions require the schema to be installed. Until t
 2. Add these environment variables in **Project Settings → Environment Variables** for Production (and Preview/Development if those environments will be used):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_APP_URL` — the public base URL for that deployment, such as `https://your-project.vercel.app`
-3. Set the Supabase site URL to the production domain and add that domain plus `/auth/callback` to Supabase **Authentication → URL Configuration → Redirect URLs**. For Vercel previews, set the preview `NEXT_PUBLIC_APP_URL` and allow its callback URL pattern as well.
+3. Set the Supabase site URL to the production domain in **Authentication → URL Configuration**. Email callback redirect URLs are not needed when **Confirm email** is off.
 4. Redeploy after changing environment variables. `NEXT_PUBLIC_` values are incorporated during the build.
 
 ## Security model

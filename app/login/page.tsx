@@ -9,7 +9,6 @@ import { ArrowRight, BriefcaseBusiness, ShieldCheck, UserRound } from "lucide-re
 type AuthResult = {
   error?: string;
   redirectTo?: string | null;
-  needsEmailConfirmation?: boolean;
 };
 
 function LoginForm() {
@@ -24,7 +23,7 @@ function LoginForm() {
       : searchParams.get("error") === "configuration"
         ? "Supabase is not configured yet. Add its URL and anon key to the app environment."
         : searchParams.get("error")
-          ? "The email confirmation link is invalid or expired. Please try signing in or register again."
+          ? "Could not complete sign-in. Please try again."
           : "",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,10 +43,6 @@ function LoginForm() {
 
       if (!response.ok) {
         setMessage(result.error ?? "Authentication failed. Please try again.");
-      } else if (result.needsEmailConfirmation) {
-        setMessage("Account created. Check your email to confirm your address, then sign in.");
-        setMode("login");
-        setPassword("");
       } else if (result.redirectTo) {
         window.location.assign(result.redirectTo);
       }
